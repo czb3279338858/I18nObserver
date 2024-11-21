@@ -11,7 +11,7 @@ export default defineConfig({
     lib: {
       entry: './lib/main.ts',
       name: 'I18nObserver',
-      fileName: 'I18nObserver',
+      fileName: 'i18n-observer',
     },
     target: 'es2015',
   },
