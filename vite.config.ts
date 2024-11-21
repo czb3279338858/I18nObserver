@@ -10,13 +10,10 @@ export default defineConfig({
   build: {
     lib: {
       entry: './lib/main.ts',
-      name: 'AxiosInterceptor',
-      fileName: 'axios-interceptor',
+      name: 'I18nObserver',
+      fileName: 'I18nObserver',
     },
     target: 'es2015',
-    rollupOptions: {
-      external: ['axios'],
-    },
   },
   plugins: [
     vue(),
