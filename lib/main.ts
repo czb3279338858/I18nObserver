@@ -65,7 +65,7 @@ export default class I18nObserver {
     const textMap = await this.getTranslation({
       defaultLanguage: this.defaultLanguage,
       targetLanguage: this.targetLanguage,
-      text: noGetText
+      text: noGetText,
     })
     Object.entries(textMap).forEach(([key, value]) => {
       this.textMap.set(key, value)
@@ -79,7 +79,7 @@ export default class I18nObserver {
       }
     })
     this.gettingText.forEach((text) => {
-      if (this.textMap[text]) {
+      if (this.textMap.get(text)) {
         this.gettingText.delete(text)
       }
     })
@@ -114,7 +114,7 @@ export default class I18nObserver {
   observeTarget: Node = document.body
   /** 开始监听目标dom */
   observe(target?: Node) {
-    this.mutationObserver = new MutationObserver((mutationList, observer) => {
+    this.mutationObserver = new MutationObserver((mutationList) => {
       mutationList.forEach((c) => {
         const addedNodes: Node[] = c.type === 'childList' ? [...c.addedNodes] : [c.target]
         this.addTextNode(addedNodes)
@@ -127,7 +127,7 @@ export default class I18nObserver {
       subtree: true,
       childList: true,
       attributes: false,
-      characterData: true
+      characterData: true,
     })
     // 第一次翻译
     this.addTextNode([observeTarget])
