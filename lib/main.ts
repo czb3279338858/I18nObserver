@@ -26,41 +26,29 @@ export default class I18nObserver {
   targetLanguage: Language
   localStorageKey: string
 
-  /** 需要翻译的text dom，可能存在翻译到一半，一部分是英文，一部分是中文的场景 */
+  /** 需要发起请求获取翻译的text dom，可能存在翻译到一半，一部分是英文，一部分是中文的场景 */
   textNodes = new Set<Node>()
   /**
    * 正在获取翻译的文本
    *  */
   gettingText = new Set<string>()
-  /**
-   * 正在获取翻译的 dom
-   */
-  gettingNodes = new Set<Node>()
 
   getTranslation: GetTranslation
 
   /** 已经翻译的字典 */
-  textMap = new Map<string, string>()
+  translateMap = new Map<string, string>()
 
   /** 获取文本的翻译 */
   translationText = debounce(async () => {
     const noGetText: string[] = []
-    const allTextValue = [...this.textMap.values()]
+
     this.textNodes.forEach((node) => {
       const textContent = node.textContent
-      if (
-        textContent &&
-        !this.gettingText.has(textContent) &&
-        !this.textMap.get(textContent) &&
-        !allTextValue.includes(textContent)
-      ) {
+      if (textContent && !this.gettingText.has(textContent)) {
         noGetText.push(textContent)
-        this.gettingNodes.add(node)
       }
     })
-    this.textNodes.clear()
     if (!noGetText.length) return
-    console.log(noGetText)
     noGetText.forEach((text) => this.gettingText.add(text))
     const textMap = await this.getTranslation({
       defaultLanguage: this.defaultLanguage,
@@ -68,18 +56,17 @@ export default class I18nObserver {
       text: noGetText,
     })
     Object.entries(textMap).forEach(([key, value]) => {
-      this.textMap.set(key, value)
+      this.translateMap.set(key, value)
     })
-    console.log(this.textMap)
-    this.gettingNodes.forEach((node) => {
-      const translationText = this.textMap.get(node.textContent!)
+    this.textNodes.forEach((node) => {
+      const translationText = this.translateMap.get(node.textContent!)
       if (node.textContent && translationText) {
         node.textContent = translationText
-        this.gettingNodes.delete(node)
+        this.textNodes.delete(node)
       }
     })
     this.gettingText.forEach((text) => {
-      if (this.textMap.get(text)) {
+      if (this.translateMap.get(text)) {
         this.gettingText.delete(text)
       }
     })
@@ -92,16 +79,31 @@ export default class I18nObserver {
       location.reload()
     }
   }
-  /** textNodesHasItem中包含了改dom */
+  /** textNodes中包含了改dom */
   textNodesHasItem(item: Node) {
     return false
     return this.textNodes.has(item)
   }
   /** 遍历dom树把需要翻译的text类型的dom加入textNodes */
   addTextNode(addedNodes: Node[]) {
+    const allTranslate = [...this.translateMap.values()]
     addedNodes.forEach((node) => {
-      if (node.nodeType === Node.TEXT_NODE && node.textContent && !this.textNodesHasItem(node)) {
-        this.textNodes.add(node)
+      const textContent = node.textContent
+      if (!textContent) return
+      const alreadyTranslate = this.translateMap.get(textContent)
+      if (alreadyTranslate) {
+        // 已经有翻译的直接翻译
+        node.textContent = alreadyTranslate
+      } else {
+        if (
+          node.nodeType === Node.TEXT_NODE &&
+          textContent &&
+          !this.textNodesHasItem(node) &&
+          // 已经翻译过的node不包括
+          !allTranslate.includes(textContent)
+        ) {
+          this.textNodes.add(node)
+        }
       }
       if (node.childNodes.length) {
         this.addTextNode([...node.childNodes])
